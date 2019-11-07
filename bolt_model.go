@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boltdb/bolt"
+	"github.com/coreos/bbolt"
 )
 
 /*
@@ -245,8 +245,8 @@ func (bd *BoltDB) syncOpenBuckets(shadow *BoltDB) {
 func (bd *BoltDB) refreshDatabase() *BoltDB {
 	// Reload the database into memBolt
 	memBolt = new(BoltDB)
-	db.View(func(tx *bolt.Tx) error {
-		return tx.ForEach(func(nm []byte, b *bolt.Bucket) error {
+	db.View(func(tx *bbolt.Tx) error {
+		return tx.ForEach(func(nm []byte, b *bbolt.Bucket) error {
 			bb, err := readBucket(b)
 			if err == nil {
 				bb.name = string(nm)
@@ -367,7 +367,7 @@ func deleteKey(path []string) error {
 	if AppArgs.ReadOnly {
 		return errors.New("DB is in Read-Only Mode")
 	}
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		// len(b.path)-1 is the key we need to delete,
 		// the rest are buckets leading to that key
 		if len(path) == 1 {
@@ -399,7 +399,7 @@ func deleteKey(path []string) error {
 	return err
 }
 
-func readBucket(b *bolt.Bucket) (*BoltBucket, error) {
+func readBucket(b *bbolt.Bucket) (*BoltBucket, error) {
 	bb := new(BoltBucket)
 	b.ForEach(func(k, v []byte) error {
 		if v == nil {
@@ -425,7 +425,7 @@ func renameBucket(path []string, name string) error {
 		return nil
 	}
 	var bb *BoltBucket // For caching the current bucket
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.View(func(tx *bbolt.Tx) error {
 		// len(b.path)-1 is the key we need to delete,
 		// the rest are buckets leading to that key
 		b := tx.Bucket([]byte(path[0]))
@@ -475,7 +475,7 @@ func updatePairKey(path []string, k string) error {
 	if AppArgs.ReadOnly {
 		return errors.New("DB is in Read-Only Mode")
 	}
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		// len(b.path)-1 is the key for the pair we're updating,
 		// the rest are buckets leading to that key
 		b := tx.Bucket([]byte(path[0]))
@@ -507,7 +507,7 @@ func updatePairValue(path []string, v string) error {
 	if AppArgs.ReadOnly {
 		return errors.New("DB is in Read-Only Mode")
 	}
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		// len(b.GetPath())-1 is the key for the pair we're updating,
 		// the rest are buckets leading to that key
 		b := tx.Bucket([]byte(path[0]))
@@ -534,7 +534,7 @@ func insertBucket(path []string, n string) error {
 		return errors.New("DB is in Read-Only Mode")
 	}
 	// Inserts a new bucket named 'n' at 'path'
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		if len(path) == 0 {
 			// insert at root
 			_, err := tx.CreateBucket([]byte(n))
@@ -574,7 +574,7 @@ func insertPair(path []string, k string, v string) error {
 		return errors.New("DB is in Read-Only Mode")
 	}
 	// Insert a new pair k => v at path
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bbolt.Tx) error {
 		if len(path) == 0 {
 			// We cannot insert a pair at root
 			return errors.New("insertPair: Cannot insert pair at root")
@@ -601,7 +601,7 @@ func insertPair(path []string, k string, v string) error {
 }
 
 func exportValue(path []string, fName string) error {
-	return db.View(func(tx *bolt.Tx) error {
+	return db.View(func(tx *bbolt.Tx) error {
 		// len(b.path)-1 is the key whose value we want to export
 		// the rest are buckets leading to that key
 		b := tx.Bucket([]byte(path[0]))
@@ -623,7 +623,7 @@ func exportValue(path []string, fName string) error {
 }
 
 func exportJSON(path []string, fName string) error {
-	return db.View(func(tx *bolt.Tx) error {
+	return db.View(func(tx *bbolt.Tx) error {
 		// len(b.path)-1 is the key whose value we want to export
 		// the rest are buckets leading to that key
 		b := tx.Bucket([]byte(path[0]))
@@ -649,7 +649,7 @@ func exportJSON(path []string, fName string) error {
 	})
 }
 
-func genJSONString(b *bolt.Bucket) string {
+func genJSONString(b *bbolt.Bucket) string {
 	ret := "{"
 	b.ForEach(func(k, v []byte) error {
 		ret = fmt.Sprintf("%s\"%s\":", ret, string(k))
