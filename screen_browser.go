@@ -588,6 +588,20 @@ func (screen *BrowserScreen) buildRightPane(style Style) {
 				Line{fmt.Sprintf("Buckets: %d", len(b.buckets)), style.defaultFg, style.defaultBg})
 			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
 				Line{fmt.Sprintf("Pairs: %d", len(b.pairs)), style.defaultFg, style.defaultBg})
+
+			bytes, err := json.MarshalIndent(b.stats, "", "  ")
+			if err != nil {
+				screen.rightPaneBuffer = append(screen.rightPaneBuffer,
+					Line{fmt.Sprintf("Stats: %v", err), style.defaultFg, style.defaultBg})
+				return
+			}
+			lines := strings.Split(string(bytes), "\n")
+			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
+				Line{fmt.Sprintf("Stats: %s", lines[0]), style.defaultFg, style.defaultBg})
+			for i := 1; i < len(lines); i++ {
+				screen.rightPaneBuffer = append(screen.rightPaneBuffer,
+					Line{lines[i], style.defaultFg, style.defaultBg})
+			}
 		} else if p != nil {
 			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
 				Line{fmt.Sprintf("Path: %s", strings.Join(stringifyPath(p.GetPath()), " → ")), style.defaultFg, style.defaultBg})

@@ -26,6 +26,7 @@ type BoltBucket struct {
 	parent    *BoltBucket
 	expanded  bool
 	errorFlag bool
+	stats     bbolt.BucketStats
 }
 
 /*
@@ -401,6 +402,7 @@ func deleteKey(path []string) error {
 
 func readBucket(b *bbolt.Bucket) (*BoltBucket, error) {
 	bb := new(BoltBucket)
+	bb.stats = b.Stats()
 	b.ForEach(func(k, v []byte) error {
 		if v == nil {
 			tb, err := readBucket(b.Bucket(k))
