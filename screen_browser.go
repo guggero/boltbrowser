@@ -588,7 +588,11 @@ func (screen *BrowserScreen) buildRightPane(style Style) {
 				Line{fmt.Sprintf("Buckets: %d", len(b.buckets)), style.defaultFg, style.defaultBg})
 			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
 				Line{fmt.Sprintf("Pairs: %d", len(b.pairs)), style.defaultFg, style.defaultBg})
-
+			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
+				Line{fmt.Sprintf("Leaf size allocated: %s", byteCountIEC(int64(b.stats.LeafAlloc))), style.defaultFg, style.defaultBg})
+			screen.rightPaneBuffer = append(screen.rightPaneBuffer,
+				Line{fmt.Sprintf("Leaf size in use: %s", byteCountIEC(int64(b.stats.LeafInuse))), style.defaultFg, style.defaultBg})
+			
 			bytes, err := json.MarshalIndent(b.stats, "", "  ")
 			if err != nil {
 				screen.rightPaneBuffer = append(screen.rightPaneBuffer,
@@ -930,4 +934,18 @@ func (screen *BrowserScreen) refreshDatabase() {
 
 func comparePaths(p1, p2 []string) bool {
 	return strings.Join(p1, " → ") == strings.Join(p2, " → ")
+}
+
+func byteCountIEC(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB",
+		float64(b)/float64(div), "KMGTPE"[exp])
 }
