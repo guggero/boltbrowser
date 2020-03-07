@@ -20,16 +20,18 @@ var memBolt *BoltDB
 
 var currentFilename string
 
-const DefaultDBOpenTimeout = time.Second
+const DefaultDBOpenTimeout = 10 * time.Second
 
 var AppArgs struct {
 	DBOpenTimeout time.Duration
 	ReadOnly      bool
+	NoSync        bool
 }
 
 func init() {
 	AppArgs.DBOpenTimeout = DefaultDBOpenTimeout
 	AppArgs.ReadOnly = false
+	AppArgs.NoSync = false
 }
 
 func parseArgs() {
@@ -63,6 +65,10 @@ func parseArgs() {
 				if val == "true" {
 					AppArgs.ReadOnly = true
 				}
+			case "-nosync", "-ns":
+				if val == "true" {
+					AppArgs.NoSync = true
+				}
 			case "-help":
 				printUsage(nil)
 			default:
@@ -89,6 +95,7 @@ func printUsage(err error) {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <filename(s)>\nOptions:\n", ProgramName)
 	fmt.Fprintf(os.Stderr, "  -timeout=duration\n        DB file open timeout (default 1s)\n")
 	fmt.Fprintf(os.Stderr, "  -ro, -readonly   \n        Open the DB in read-only mode\n")
+	fmt.Fprintf(os.Stderr, "  -ns, -nosync     \n        No freelist sync mode\n")
 }
 
 func main() {
@@ -106,7 +113,7 @@ func main() {
 
 	for _, databaseFile := range databaseFiles {
 		currentFilename = databaseFile
-		db, err = bbolt.Open(databaseFile, 0600, &bbolt.Options{Timeout: AppArgs.DBOpenTimeout})
+		db, err = bbolt.Open(databaseFile, 0600, &bbolt.Options{Timeout: AppArgs.DBOpenTimeout, NoFreelistSync: AppArgs.NoSync, ReadOnly: AppArgs.ReadOnly})
 		if err == bbolt.ErrTimeout {
 			termbox.Close()
 			fmt.Printf("File %s is locked. Make sure it's not used by another app and try again\n", databaseFile)
